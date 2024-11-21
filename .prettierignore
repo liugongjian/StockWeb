@@ -1,10 +1,3 @@
-# Testing
+dist
 coverage
-
-# Production
-public/*
-!public/manifest.json
-
-# Misc
-*.log
-
+node_modules

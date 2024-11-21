@@ -1,41 +1,77 @@
-import { createMemoryHistory, createBrowserHistory } from "history";
-import { Action, configureStore } from "@reduxjs/toolkit";
-import { ThunkAction } from "redux-thunk";
-import { routerMiddleware } from "connected-react-router";
+import { configureStore, Tuple } from '@reduxjs/toolkit';
+import {
+  FLUSH,
+  PAUSE,
+  PERSIST,
+  persistCombineReducers,
+  persistStore,
+  PURGE,
+  REGISTER,
+  REHYDRATE,
+} from 'redux-persist';
+import autoMergeLevel2 from 'redux-persist/lib/stateReconciler/autoMergeLevel2';
+import storage from 'redux-persist/lib/storage';
 
-import createRootReducer from "./rootReducer";
+import rootSaga from '~/sagas';
 
-interface Arg {
-  initialState?: typeof window.__INITIAL_STATE__;
-  url?: string;
-}
+import { RootState } from '~/types';
 
-// Use inferred return type for making correctly Redux types
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-const createStore = ({ initialState, url }: Arg = {}) => {
-  const history = __SERVER__
-    ? createMemoryHistory({ initialEntries: [url || "/"] })
-    : createBrowserHistory();
-  const store = configureStore({
-    preloadedState: initialState,
-    reducer: createRootReducer(history),
-    middleware: (getDefaultMiddleware) => [
-      // Included default middlewares: https://redux-toolkit.js.org/api/getDefaultMiddleware#included-default-middleware
-      ...getDefaultMiddleware(),
-      routerMiddleware(history),
-    ],
-    devTools: __DEV__,
-  });
+import dynamicMiddlewares from './dynamic-middlewares';
+import middlewares, { sagaMiddleware } from './middlewares';
+import alerts, { alertsState } from './slices/alerts';
+import app, { appState } from './slices/app';
+import github, { githubState } from './slices/github';
+import user, { userState } from './slices/user';
 
-  return { store, history };
+const getDefaultMiddlewareOptions = {
+  serializableCheck: {
+    ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+  },
+  // thunk: false,
 };
 
-const { store } = createStore();
+export const initialState = {
+  alerts: alertsState,
+  app: appState,
+  github: githubState,
+  user: userState,
+};
 
-export type AppState = ReturnType<typeof store.getState>;
+export const reducers = {
+  alerts,
+  app,
+  github,
+  user,
+};
 
-export type AppDispatch = typeof store.dispatch;
+const rootReducer = persistCombineReducers<RootState>(
+  {
+    key: 'rrsb',
+    stateReconciler: autoMergeLevel2,
+    storage,
+    blacklist: ['alerts'],
+    timeout: 0,
+  },
+  reducers,
+);
 
-export type AppThunk = ThunkAction<void, AppState, unknown, Action<string>>;
+export const configStore = (preloadedState: any = {}) => {
+  const enhancedStore = configureStore({
+    reducer: rootReducer,
+    preloadedState,
+    middleware: getDefaultMiddleware => {
+      return new Tuple(
+        ...getDefaultMiddleware(getDefaultMiddlewareOptions),
+        ...middlewares,
+        dynamicMiddlewares,
+      );
+    },
+  });
 
-export default createStore;
+  sagaMiddleware.run(rootSaga);
+
+  return enhancedStore;
+};
+
+export const store = configStore();
+export const persistor = persistStore(store);
