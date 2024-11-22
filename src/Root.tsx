@@ -1,30 +1,31 @@
 import { useEffect } from 'react';
+
 import { Helmet } from 'react-helmet-async';
 import { useDispatch } from 'react-redux';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { ThemeProvider } from '@emotion/react';
-import styled from '@emotion/styled';
-import { px } from '@gilbarbara/components';
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+} from 'react-router-dom';
 import useTreeChanges from 'tree-changes-hook';
-
-import { name } from '~/config';
-
-import { useAppSelector } from '~/modules/hooks';
-import theme, { headerHeight } from '~/modules/theme';
-
 import { alertShow } from '~/actions';
-
 import Footer from '~/components/Footer';
 import Header from '~/components/Header';
 import PrivateRoute from '~/components/PrivateRoute';
 import PublicRoute from '~/components/PublicRoute';
+import { name } from '~/config';
 import SystemAlerts from '~/containers/SystemAlerts';
+import { useAppSelector } from '~/modules/hooks';
+import theme, { headerHeight } from '~/modules/theme';
 import Home from '~/routes/Home';
 import NotFound from '~/routes/NotFound';
 import Private from '~/routes/Private';
-
 import { selectUser } from '~/selectors';
 import { UserState } from '~/types';
+
+import { ThemeProvider } from '@emotion/react';
+import styled from '@emotion/styled';
+import { px } from '@gilbarbara/components';
 
 const AppWrapper = styled.div`
   display: flex;
